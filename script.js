@@ -6,6 +6,10 @@ window.addEventListener("DOMContentLoaded", () => {
   const prevBtn = document.getElementById("prev");
   const nextBtn = document.getElementById("forward");
   const playBtn = document.getElementById("play");
+  const progressBar = document.getElementById("progress-container");
+  const progressIndicator = document.getElementById("progress");
+  const currentTimeElement = document.getElementById("current-time");
+  const durationElement = document.getElementById("duration");
 
   const songs = [
     {
@@ -46,7 +50,7 @@ window.addEventListener("DOMContentLoaded", () => {
     playBtn.setAttribute("title", "Play");
   };
 
-  //Update the DOM with songs
+  //Update the DOM with song
   const loadSong = (song) => {
     title.textContent = song.title;
     artist.textContent = song.artist;
@@ -72,13 +76,64 @@ window.addEventListener("DOMContentLoaded", () => {
     playSong();
   };
 
+  const getSongDurationInMinutes = (duration) => {
+    //Calculate duration of the song in minutes
+    return Math.floor(duration / 60);
+  }
+
+  const getSongDurationInSeconds = (duration) => {
+    //Calculate duration of the song in seconds
+    let durationInSeconds = Math.floor(duration % 60);
+      if (durationInSeconds < 10) {
+        durationInSeconds = `0${durationInSeconds}`;
+      }
+      return durationInSeconds.toString();
+  }
+
+  
+  const updateProgressBar = (event) => {
+    if (isSongPlaying) {
+      const { duration, currentTime } = event.srcElement;
+      //Update progress bar width
+      const progressPercent = (currentTime / duration) * 100;
+      progressIndicator.style.width = `${progressPercent}%`;
+      
+      const durationInMinutes = getSongDurationInMinutes(duration);
+      const durationInSeconds = getSongDurationInSeconds(duration);
+  
+      //Wait for durationInSeconds to be calculated before changing DOM
+      if (durationInSeconds !== "NaN") {
+        durationElement.textContent = `${durationInMinutes}:${durationInSeconds}`;
+      }
+
+      const currentInMinutes = Math.floor(currentTime / 60);
+      //Calculate current of the song in seconds
+      let currentInSeconds = Math.floor(currentTime % 60);
+      if (currentInSeconds < 10) {
+        currentInSeconds = `0${currentInSeconds}`;
+      }
+      currentTimeElement.textContent = `${currentInMinutes}:${currentInSeconds}`;
+    }
+  };
+  
+  const navigateSong = (event) => {
+    const progressBarWidth = event.srcElement.clientWidth;
+    const barClickedPosition = event.offsetX;
+    const { duration } = audioElement;
+    audioElement.currentTime = (barClickedPosition / progressBarWidth) * duration;
+    !isSongPlaying && playSong();
+  };
+  
   //Select a first song on page load
   loadSong(songs[songIndex]);
-
+  
   playBtn.addEventListener("click", () =>
     isSongPlaying ? pauseSong() : playSong()
   );
 
   prevBtn.addEventListener("click", playPreviousSong);
   nextBtn.addEventListener("click", playNextSong);
+  audioElement.addEventListener("timeupdate", updateProgressBar);
+  progressBar.addEventListener("click", navigateSong);
+  audioElement.addEventListener('ended', playNextSong);
 });
